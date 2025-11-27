@@ -49,6 +49,20 @@ export class PolymarketAPI {
       'nfl', 'nba', 'mlb', 'nhl', 'ncaa', 'college football', 'college basketball'
     ];
 
+    // 数字货币单日预测关键词列表
+    const dailyCryptoPredictionPatterns = [
+      'will the price of',
+      'price of bitcoin be',
+      'price of ethereum be',
+      'price of solana be',
+      'price of btc be',
+      'price of eth be',
+      'price of sol be',
+      'on november', 'on december', 'on january', 'on february',
+      'on march', 'on april', 'on may', 'on june',
+      'on july', 'on august', 'on september', 'on october'
+    ];
+
     return markets
       .map(market => {
         const question = (market.question || '').toLowerCase();
@@ -60,6 +74,17 @@ export class PolymarketAPI {
 
         // 过滤掉体育比赛类市场
         if (sportsKeywords.some(keyword => question.includes(keyword.toLowerCase()))) {
+          return null;
+        }
+
+        // 过滤掉数字货币单日预测类市场
+        // 检查是否包含价格预测模式 + 日期
+        const hasPricePattern = dailyCryptoPredictionPatterns.some(pattern => 
+          question.includes(pattern)
+        );
+        const hasDatePattern = /on (november|december|january|february|march|april|may|june|july|august|september|october) \d{1,2}/i.test(question);
+        
+        if (hasPricePattern && hasDatePattern) {
           return null;
         }
 
