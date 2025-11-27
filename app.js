@@ -2,8 +2,11 @@
 // With Favorites, Price Alerts, Notifications, Export, and History
 
 // API Configuration
+// 注意：如果部署到 Vercel，应该使用 Next.js 版本的 API 路由
+// 如果使用纯前端版本，需要启动代理服务器（proxy-server.js）
 const API_CONFIG = {
-    BASE_URL: 'https://gamma-api.polymarket.com/markets',
+    BASE_URL: 'http://localhost:3001/api/markets', // 使用本地代理服务器避免 CORS 问题
+    // BASE_URL: 'https://gamma-api.polymarket.com/markets', // 直接访问会被 CORS 阻止
     REFRESH_INTERVAL: 120000, // 2 minutes
     MAX_MARKETS: 150
 };
