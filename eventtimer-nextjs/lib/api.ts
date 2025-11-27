@@ -39,11 +39,27 @@ export class PolymarketAPI {
     const now = new Date();
     const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000); // 3天后
 
+    // 体育比赛关键词列表
+    const sportsKeywords = [
+      ' vs ', ' vs. ', 'versus',
+      'spread', ' o/u ', 'over/under', 'over ', 'under ',
+      'win on', 'crimson tide', 'rebels', 'terrapins',
+      'club tijuana', 'tigres', 'alabama', 'ole miss', 'maryland', 'utah',
+      'football', 'basketball', 'soccer', 'baseball', 'hockey',
+      'nfl', 'nba', 'mlb', 'nhl', 'ncaa', 'college football', 'college basketball'
+    ];
+
     return markets
       .map(market => {
+        const question = (market.question || '').toLowerCase();
+        
         // 过滤掉二元市场（"Up or Down" 类型）
-        const question = market.question || '';
-        if (question.toLowerCase().includes('up or down')) {
+        if (question.includes('up or down')) {
+          return null;
+        }
+
+        // 过滤掉体育比赛类市场
+        if (sportsKeywords.some(keyword => question.includes(keyword.toLowerCase()))) {
           return null;
         }
 
