@@ -23,6 +23,8 @@ export interface Market {
   slug?: string;
   outcomes?: string[];
   clobTokenIds?: string; // JSON string array of CLOB token IDs
+  conditionId?: string; // Condition ID for market URL
+  events?: Array<{ slug?: string; [key: string]: any }>; // Events array, may contain more accurate slug
   active?: boolean;
   closed?: boolean;
 
