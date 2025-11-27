@@ -2,7 +2,7 @@ import { Market } from '@/types/market';
 
 // 使用Next.js API路由代理(Polymarket API不支持浏览器CORS)
 const API_PROXY = '/api/markets';
-const MIN_LIQUIDITY = 1000;
+const MIN_LIQUIDITY = 10000; // 流动性要求：$10,000
 
 export class PolymarketAPI {
   static async fetchMarkets(limit: number = 500): Promise<Market[]> {

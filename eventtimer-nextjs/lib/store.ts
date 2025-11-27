@@ -35,7 +35,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       filter: {
         timeFilter: 'all',
         timePeriod: 'all', // 默认显示所有市场，而不是只显示 2 小时内
-        minLiquidity: 1000,
+        minLiquidity: 10000, // 流动性要求：$10,000
         searchQuery: '',
       },
       loading: false,
