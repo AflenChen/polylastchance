@@ -5,7 +5,7 @@ const API_PROXY = '/api/markets';
 const MIN_LIQUIDITY = 1000;
 
 export class PolymarketAPI {
-  static async fetchMarkets(limit: number = 100): Promise<Market[]> {
+  static async fetchMarkets(limit: number = 500): Promise<Market[]> {
     try {
       const now = new Date().toISOString();
 
