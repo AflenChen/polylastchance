@@ -34,7 +34,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       priceHistory: {},
       filter: {
         timeFilter: 'all',
-        timePeriod: '2h', // 默认显示 2 小时内
+        timePeriod: 'all', // 默认显示所有市场，而不是只显示 2 小时内
         minLiquidity: 1000,
         searchQuery: '',
       },
