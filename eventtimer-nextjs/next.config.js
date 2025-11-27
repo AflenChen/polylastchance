@@ -8,14 +8,8 @@ const nextConfig = {
       },
     ],
   },
-  async rewrites() {
-    return [
-      {
-        source: '/api/markets/:path*',
-        destination: 'http://localhost:3001/api/markets/:path*',
-      },
-    ];
-  },
+  // 注意：不需要 rewrites，因为我们已经有了 /app/api/markets/route.ts
+  // 这个 API 路由会自动处理代理请求，在 Vercel 上也能正常工作
 }
 
 module.exports = nextConfig
