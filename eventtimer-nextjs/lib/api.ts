@@ -37,9 +37,16 @@ export class PolymarketAPI {
 
   private static processMarkets(markets: any[]): Market[] {
     const now = new Date();
+    const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000); // 3天后
 
     return markets
       .map(market => {
+        // 过滤掉二元市场（"Up or Down" 类型）
+        const question = market.question || '';
+        if (question.toLowerCase().includes('up or down')) {
+          return null;
+        }
+
         // Extract deadline with correct priority: endDate > gameStartTime > endDateIso
         let deadline: Date | null = null;
 
@@ -59,6 +66,11 @@ export class PolymarketAPI {
         }
 
         if (!deadline) return null;
+
+        // 只保留最近3天到期的市场
+        if (deadline > threeDaysFromNow) {
+          return null;
+        }
 
         // Calculate urgency
         const hoursUntil = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
