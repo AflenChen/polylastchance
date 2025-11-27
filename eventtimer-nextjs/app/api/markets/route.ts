@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const POLYMARKET_API = 'https://gamma-api.polymarket.com/markets';
 
-// 启用Edge Runtime以获得更好的性能
-export const runtime = 'edge';
+// 使用 Node.js Runtime 以确保在 Vercel 上正常工作
+// export const runtime = 'edge'; // 暂时禁用 Edge Runtime，因为可能在 Vercel 上有兼容性问题
 
 // 缓存60秒 - 显著减少API调用
 export const revalidate = 60;
