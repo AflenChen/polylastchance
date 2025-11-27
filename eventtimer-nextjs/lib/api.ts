@@ -103,10 +103,18 @@ export class PolymarketAPI {
 
   static getMarketUrl(market: Market): string {
     // Generate Polymarket URL for the market
+    // Polymarket 使用 event/{slug} 格式，如果市场没有 slug，尝试使用 conditionId
     if (market.slug) {
       return `https://polymarket.com/event/${market.slug}`;
     }
-    // Fallback: use market ID
+    
+    // 如果市场没有 slug，检查是否有 conditionId
+    // @ts-ignore - conditionId 可能不在类型定义中
+    if (market.conditionId) {
+      return `https://polymarket.com/condition/${market.conditionId}`;
+    }
+    
+    // 最后的 fallback：使用 market ID（虽然这个格式可能不工作，但总比没有好）
     return `https://polymarket.com/market/${market.id}`;
   }
 }
