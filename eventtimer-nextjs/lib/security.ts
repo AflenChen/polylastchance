@@ -154,15 +154,32 @@ export function sanitizeCoinId(coinId: string): string | null {
  * 兼容 Edge Runtime 和 Node.js Runtime
  */
 export function getCorsOrigin(): string {
-  // 在 Edge Runtime 中，使用全局对象检查环境
-  // 在 Node.js Runtime 中，使用 process.env
-  const isEdge = typeof EdgeRuntime !== 'undefined';
-  const nodeEnv = isEdge 
-    ? (globalThis as any).process?.env?.NODE_ENV 
-    : process.env.NODE_ENV;
-  const allowedOrigin = isEdge
-    ? (globalThis as any).process?.env?.ALLOWED_ORIGIN
-    : process.env.ALLOWED_ORIGIN;
+  // 兼容 Edge Runtime 和 Node.js Runtime 的环境变量访问
+  // 在 Edge Runtime 中，process.env 可能不可用，使用 globalThis
+  // 在 Node.js Runtime 中，直接使用 process.env
+  let nodeEnv: string | undefined;
+  let allowedOrigin: string | undefined;
+  let isVercel: string | undefined;
+  
+  try {
+    // 尝试使用 process.env（Node.js Runtime）
+    if (typeof process !== 'undefined' && process.env) {
+      nodeEnv = process.env.NODE_ENV;
+      allowedOrigin = process.env.ALLOWED_ORIGIN;
+      isVercel = process.env.VERCEL;
+    } else {
+      // Edge Runtime：使用 globalThis
+      const globalProcess = (globalThis as any).process;
+      nodeEnv = globalProcess?.env?.NODE_ENV;
+      allowedOrigin = globalProcess?.env?.ALLOWED_ORIGIN;
+      isVercel = globalProcess?.env?.VERCEL;
+    }
+  } catch (e) {
+    // 如果访问失败，使用默认值
+    nodeEnv = undefined;
+    allowedOrigin = undefined;
+    isVercel = undefined;
+  }
   
   if (allowedOrigin) {
     return allowedOrigin;
@@ -172,11 +189,6 @@ export function getCorsOrigin(): string {
   // 其他生产环境应该设置 ALLOWED_ORIGIN 环境变量
   if (nodeEnv === 'production') {
     // 在 Vercel 上，允许所有来源（vercel.json 已经配置了 CORS）
-    // 如果设置了 VERCEL 环境变量，说明在 Vercel 上运行
-    const isVercel = isEdge
-      ? (globalThis as any).process?.env?.VERCEL
-      : process.env.VERCEL;
-    
     if (isVercel) {
       return '*'; // Vercel 上允许所有来源
     }
