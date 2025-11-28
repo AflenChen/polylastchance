@@ -1,6 +1,21 @@
 import { create } from 'zustand';
 import { Market, FilterOptions, PriceHistory } from '@/types/market';
 
+// 体育竞猜相关的类别列表
+const SPORTS_CATEGORIES = [
+  'sports', 'sports-betting', 'football', 'basketball', 'baseball', 
+  'hockey', 'soccer', 'esports', 'valorant', 'nfl', 'nba', 'mlb', 'nhl', 'ncaa'
+];
+
+// 体育比赛关键词列表（作为类别过滤的补充，因为有些市场可能没有明确的类别）
+const SPORTS_KEYWORDS = [
+  ' vs ', ' vs. ', 'versus',           // 对战
+  'spread', ' o/u ', 'over/under',    // 盘口
+  'win on',                            // 获胜
+  'fc', 'sk', 'tc',                    // 足球俱乐部后缀
+  'valorant', 'csgo', 'dota',          // 电子竞技
+];
+
 interface AppStore {
   // State
   markets: Market[];
@@ -34,8 +49,13 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       priceHistory: {},
       filter: {
         timeFilter: 'all',
-        timePeriod: 'all', // 默认显示所有市场，而不是只显示 2 小时内
+        timePeriod: 'all', // 默认显示所有市场
         minLiquidity: 10000, // 流动性要求：$10,000
+        minVolume: 0, // 最小交易量
+        maxDaysUntilExpiry: 14, // 最大到期天数（2周）
+        selectedCategories: undefined, // 选择的类别（undefined 表示显示所有类别）
+        excludeSportsMarkets: true, // 默认排除体育竞猜
+        excludeBinaryMarkets: true, // 默认排除二元期权（"Up or Down" 类型）
         searchQuery: '',
       },
       loading: false,
@@ -63,7 +83,20 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       },
 
       setFilter: (newFilter) => {
-        set({ filter: { ...get().filter, ...newFilter } });
+        const currentFilter = get().filter;
+        const updatedFilter = { ...currentFilter, ...newFilter };
+        // 确保 undefined 值正确设置（移除该属性）
+        Object.keys(newFilter).forEach(key => {
+          if (newFilter[key as keyof typeof newFilter] === undefined) {
+            delete updatedFilter[key as keyof typeof updatedFilter];
+          }
+        });
+        console.log('🔄 更新过滤条件:', { 
+          old: currentFilter, 
+          new: newFilter, 
+          updated: updatedFilter 
+        });
+        set({ filter: updatedFilter as typeof currentFilter });
         get().applyFilters();
       },
 
@@ -103,6 +136,15 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       applyFilters: () => {
         const { markets, filter, favorites } = get();
         let filtered = [...markets];
+        
+        console.log('🔍 应用过滤条件:', {
+          totalMarkets: markets.length,
+          minLiquidity: filter.minLiquidity,
+          minVolume: filter.minVolume,
+          maxDaysUntilExpiry: filter.maxDaysUntilExpiry,
+          selectedCategories: filter.selectedCategories,
+          timePeriod: filter.timePeriod,
+        });
 
         // Search filter
         if (filter.searchQuery) {
@@ -127,8 +169,11 @@ export const useAppStore = create<AppStore>()((set, get) => ({
           case '12h':
             filtered = filtered.filter((m) => m._hoursUntil && m._hoursUntil <= 12);
             break;
+          case '72h':
+            filtered = filtered.filter((m) => m._hoursUntil && m._hoursUntil <= 72);
+            break;
           case 'all':
-            // 显示所有市场
+            // 显示所有市场（2周内）
             break;
         }
 
@@ -158,6 +203,74 @@ export const useAppStore = create<AppStore>()((set, get) => ({
           });
         }
 
+        // Volume filter (交易量)
+        if (filter.minVolume) {
+          filtered = filtered.filter((m) => {
+            const volume = parseFloat(String(m.volume || '0'));
+            return volume >= filter.minVolume!;
+          });
+        }
+
+        // Expiry time filter (到期时间)
+        if (filter.maxDaysUntilExpiry) {
+          const maxDaysInHours = filter.maxDaysUntilExpiry * 24;
+          filtered = filtered.filter((m) => {
+            return m._hoursUntil !== undefined && m._hoursUntil <= maxDaysInHours;
+          });
+        }
+
+        // Selected categories filter (选择的类别)
+        // 如果 selectedCategories 有值且长度 > 0，只显示选中的类别
+        // 如果 selectedCategories 为 undefined 或空数组，显示所有类别
+        if (filter.selectedCategories && filter.selectedCategories.length > 0) {
+          const beforeCount = filtered.length;
+          filtered = filtered.filter((m) => {
+            const category = m.category || '';
+            const included = filter.selectedCategories!.includes(category);
+            return included;
+          });
+          console.log(`📊 类别过滤: ${beforeCount} -> ${filtered.length} (选择的类别: ${filter.selectedCategories.join(', ')})`);
+        } else {
+          console.log('📊 类别过滤: 显示所有类别');
+        }
+
+        // Sports markets filter (体育竞猜过滤)
+        if (filter.excludeSportsMarkets) {
+          const beforeCount = filtered.length;
+          filtered = filtered.filter((m) => {
+            const category = (m.category || '').toLowerCase();
+            const question = (m.question || '').toLowerCase();
+            
+            // 检查类别
+            const isSportsCategory = SPORTS_CATEGORIES.some(sportsCat => 
+              category.includes(sportsCat.toLowerCase())
+            );
+            
+            // 检查关键词（作为补充，因为有些市场可能没有明确的类别）
+            const isSportsKeyword = SPORTS_KEYWORDS.some(keyword => 
+              question.includes(keyword.toLowerCase())
+            );
+            
+            return !isSportsCategory && !isSportsKeyword;
+          });
+          console.log(`📊 体育竞猜过滤: ${beforeCount} -> ${filtered.length} (已排除体育竞猜)`);
+        } else {
+          console.log('📊 体育竞猜过滤: 未排除体育竞猜');
+        }
+
+        // Binary markets filter (二元期权过滤)
+        if (filter.excludeBinaryMarkets) {
+          const beforeCount = filtered.length;
+          filtered = filtered.filter((m) => {
+            const question = (m.question || '').toLowerCase();
+            return !question.includes('up or down');
+          });
+          console.log(`📊 二元期权过滤: ${beforeCount} -> ${filtered.length} (已排除 "Up or Down" 类型)`);
+        } else {
+          console.log('📊 二元期权过滤: 未排除二元期权');
+        }
+
+        console.log(`✅ 过滤完成: ${markets.length} -> ${filtered.length} 个市场`);
         set({ filteredMarkets: filtered });
       },
 }));

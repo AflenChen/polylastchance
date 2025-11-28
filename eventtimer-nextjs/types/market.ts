@@ -53,9 +53,14 @@ export interface PriceHistory {
 
 export interface FilterOptions {
   timeFilter: 'all' | 'urgent' | 'soon' | 'favorites';
-  timePeriod: '30min' | '2h' | '12h' | 'all';
+  timePeriod: '30min' | '2h' | '12h' | '72h' | 'all';
   category?: string;
   minLiquidity?: number;
+  minVolume?: number; // 最小交易量
+  maxDaysUntilExpiry?: number; // 最大到期天数（2周 = 14天）
+  selectedCategories?: string[]; // 选择的类别（如果为空则显示所有类别）
+  excludeSportsMarkets?: boolean; // 是否排除体育竞猜（默认排除）
+  excludeBinaryMarkets?: boolean; // 是否排除二元期权（"Up or Down" 类型）
   searchQuery?: string;
 }
 

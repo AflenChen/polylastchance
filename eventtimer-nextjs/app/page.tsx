@@ -6,6 +6,7 @@ import { Bell, BellOff } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { TimePeriodTabs } from '@/components/TimePeriodTabs';
 import { FilterBar } from '@/components/FilterBar';
+import { FilterPanel } from '@/components/FilterPanel';
 import { MarketGrid } from '@/components/MarketGrid';
 import { useAppStore } from '@/lib/store';
 import { PolymarketAPI } from '@/lib/api';
@@ -160,7 +161,12 @@ export default function Home() {
         <TimePeriodTabs />
 
         {/* Filter Bar */}
-        <FilterBar />
+        <div className="flex items-start gap-4 flex-wrap">
+          <div className="flex-1">
+            <FilterBar />
+          </div>
+          <FilterPanel />
+        </div>
 
         {/* Market Grid */}
         <MarketGrid />

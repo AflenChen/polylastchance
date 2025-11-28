@@ -31,16 +31,12 @@ export function MarketCard({ market, index }: MarketCardProps) {
   const urgencyBorder = Utils.getUrgencyBorder(market._urgency);
   const urgencyBg = Utils.getUrgencyBg(market._urgency);
 
-  const handleOpenMarket = () => {
+  const handleOpenMarket = (e: React.MouseEvent) => {
+    e.preventDefault();
     const url = PolymarketAPI.getMarketUrl(market);
     console.log('Opening market URL:', url, 'Market:', { id: market.id, slug: market.slug });
-    // 使用 window.open 并添加 noopener noreferrer 以提高安全性
-    const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-    if (!newWindow) {
-      // 如果弹窗被阻止，尝试直接跳转
-      console.warn('Popup blocked, trying direct navigation');
-      window.location.href = url;
-    }
+    // 始终在新标签页打开
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const handleToggleFavorite = (e: React.MouseEvent) => {
