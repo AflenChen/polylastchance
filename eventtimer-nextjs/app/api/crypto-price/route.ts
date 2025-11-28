@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { sanitizeCoinId, getCorsOrigin } from '@/lib/security';
 
-export const runtime = 'edge';
+// 暂时禁用 Edge Runtime，使用 Node.js Runtime 以确保兼容性
+// export const runtime = 'edge';
 
 /**
  * CoinGecko API Proxy
@@ -14,9 +16,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing coin ID' }, { status: 400 });
   }
 
+  // 验证和清理 coin ID（防止注入攻击）
+  const sanitizedCoinId = sanitizeCoinId(coinId);
+  if (!sanitizedCoinId) {
+    return NextResponse.json(
+      { error: 'Invalid coin ID format' },
+      { status: 400 }
+    );
+  }
+
   try {
+    // 使用清理后的 coin ID
     const response = await fetch(
-      `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd&include_24hr_change=true`,
+      `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(sanitizedCoinId)}&vs_currencies=usd&include_24hr_change=true`,
       {
         headers: {
           'Accept': 'application/json',
@@ -28,18 +40,31 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       return NextResponse.json(
-        { error: `CoinGecko API returned ${response.status}` },
+        { error: 'Failed to fetch crypto price' },
         { status: response.status }
       );
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    const corsOrigin = getCorsOrigin();
+
+    return NextResponse.json(data, {
+      headers: {
+        ...(corsOrigin && { 'Access-Control-Allow-Origin': corsOrigin }),
+      },
+    });
   } catch (error) {
     console.error('Failed to fetch crypto price:', error);
+    const corsOrigin = getCorsOrigin();
+    
     return NextResponse.json(
       { error: 'Failed to fetch crypto price' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          ...(corsOrigin && { 'Access-Control-Allow-Origin': corsOrigin }),
+        },
+      }
     );
   }
 }
