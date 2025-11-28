@@ -3,8 +3,9 @@ import { sanitizeQueryParams, getCorsOrigin } from '@/lib/security';
 
 const POLYMARKET_API = 'https://gamma-api.polymarket.com/markets';
 
-// 使用 Node.js Runtime 以确保在 Vercel 上正常工作
-// export const runtime = 'edge'; // 暂时禁用 Edge Runtime，因为可能在 Vercel 上有兼容性问题
+// 在 Vercel 上，Edge Runtime 性能更好，但需要兼容 Node.js Runtime
+// 默认使用 Node.js Runtime 以确保兼容性，可以在 Vercel 上手动切换到 Edge Runtime
+// export const runtime = 'edge'; // 取消注释以使用 Edge Runtime（Vercel 推荐）
 
 // 缓存60秒 - 显著减少API调用
 export const revalidate = 60;
@@ -24,8 +25,14 @@ export async function GET(req: NextRequest) {
     console.log('Proxying to Polymarket:', targetUrl);
 
     // Add timeout using AbortController (45 seconds - Polymarket API can be very slow)
+    // 兼容 Edge Runtime（不支持 setTimeout）和 Node.js Runtime
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000);
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    
+    // 只在 Node.js Runtime 中使用 setTimeout（Edge Runtime 不支持）
+    if (typeof setTimeout !== 'undefined') {
+      timeoutId = setTimeout(() => controller.abort(), 45000);
+    }
 
     // 调用Polymarket API
     const response = await fetch(targetUrl, {
@@ -33,9 +40,12 @@ export async function GET(req: NextRequest) {
         'User-Agent': 'Mozilla/5.0 (compatible; EventTimer/2.0)',
       },
       signal: controller.signal,
+      // Edge Runtime 会自动处理超时，Node.js Runtime 使用 AbortController
     });
 
-    clearTimeout(timeoutId);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       console.warn(`Polymarket API returned ${response.status}`);

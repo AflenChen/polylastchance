@@ -151,23 +151,41 @@ export function sanitizeCoinId(coinId: string): string | null {
 /**
  * 获取安全的 CORS 来源
  * 在生产环境中应该限制为特定域名
+ * 兼容 Edge Runtime 和 Node.js Runtime
  */
 export function getCorsOrigin(): string {
-  // 在生产环境中，应该从环境变量读取允许的来源
-  const allowedOrigin = process.env.ALLOWED_ORIGIN;
+  // 在 Edge Runtime 中，使用全局对象检查环境
+  // 在 Node.js Runtime 中，使用 process.env
+  const isEdge = typeof EdgeRuntime !== 'undefined';
+  const nodeEnv = isEdge 
+    ? (globalThis as any).process?.env?.NODE_ENV 
+    : process.env.NODE_ENV;
+  const allowedOrigin = isEdge
+    ? (globalThis as any).process?.env?.ALLOWED_ORIGIN
+    : process.env.ALLOWED_ORIGIN;
   
   if (allowedOrigin) {
     return allowedOrigin;
   }
   
-  // 开发环境：允许所有来源（仅用于开发）
-  // 生产环境应该设置 ALLOWED_ORIGIN 环境变量
-  if (process.env.NODE_ENV === 'production') {
-    // 生产环境默认不允许所有来源
+  // Vercel 生产环境：允许所有来源（因为 Vercel 已经处理了 CORS）
+  // 其他生产环境应该设置 ALLOWED_ORIGIN 环境变量
+  if (nodeEnv === 'production') {
+    // 在 Vercel 上，允许所有来源（vercel.json 已经配置了 CORS）
+    // 如果设置了 VERCEL 环境变量，说明在 Vercel 上运行
+    const isVercel = isEdge
+      ? (globalThis as any).process?.env?.VERCEL
+      : process.env.VERCEL;
+    
+    if (isVercel) {
+      return '*'; // Vercel 上允许所有来源
+    }
+    
+    // 其他生产环境默认不允许所有来源
     return '';
   }
   
-  return '*';
+  return '*'; // 开发环境允许所有来源
 }
 
 /**

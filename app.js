@@ -2,11 +2,32 @@
 // With Favorites, Price Alerts, Notifications, Export, and History
 
 // API Configuration
-// 注意：如果部署到 Vercel，应该使用 Next.js 版本的 API 路由
+// 注意：如果部署到 Vercel，应该使用 Next.js 版本的 API 路由（eventtimer-nextjs 目录）
 // 如果使用纯前端版本，需要启动代理服务器（proxy-server.js）
 const API_CONFIG = {
-    BASE_URL: 'http://localhost:3001/api/markets', // 使用本地代理服务器避免 CORS 问题
-    // BASE_URL: 'https://gamma-api.polymarket.com/markets', // 直接访问会被 CORS 阻止
+    // 自动检测环境：如果是 Vercel 部署，使用相对路径；否则使用本地代理
+    BASE_URL: (() => {
+        // 检查是否在 Vercel 上运行（通过检查 hostname）
+        const isVercel = window.location.hostname.includes('vercel.app') || 
+                        window.location.hostname.includes('vercel.com');
+        
+        // 检查是否在本地开发环境
+        const isLocal = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1';
+        
+        if (isVercel) {
+            // Vercel 上使用相对路径（需要 Next.js API 路由）
+            return '/api/markets';
+        } else if (isLocal) {
+            // 本地开发使用代理服务器
+            return 'http://localhost:3001/api/markets';
+        } else {
+            // 其他环境（如自定义域名），尝试使用相对路径
+            // 如果部署了 Next.js 版本，这会工作
+            // 否则需要配置代理服务器
+            return '/api/markets';
+        }
+    })(),
     REFRESH_INTERVAL: 120000, // 2 minutes
     MAX_MARKETS: 150
 };
